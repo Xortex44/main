@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}پرسش‌نامه سفر | هم‌سفر من{% endblock %}
+{% block content %}
+<section class="wrap">
+  <h1 class="page">پرسش‌نامه سفر</h1>
+  <p class="lead">چند سؤال کوتاه جواب بدهید تا مناسب‌ترین شهر و برنامه روزانه را پیشنهاد بدهیم. (مبدأ: تهران)</p>
+
+  <form class="card form planner" method="post" action="{{ url_for('planner') }}">
+    {% set s = state or {} %}
+    <div class="row">
+      <label>تعداد بزرگسال <input type="number" name="adults" min="1" max="20" value="{{ s.adults or 2 }}"></label>
+      <label>تعداد کودک (زیر ۱۲ سال) <input type="number" name="kids" min="0" max="20" value="{{ s.kids or 0 }}"></label>
+      <label>مدت سفر (روز) <input type="number" name="days" min="1" max="14" value="{{ s.days or 3 }}"></label>
+      <label>بودجه کل (میلیون تومان) <input type="number" name="budget" min="1" max="1000" value="{{ s.budget or 20 }}"></label>
+    </div>
+    <div class="row">
+      <label>ماه سفر
+        <select name="month">{% for m in months %}<option value="{{ loop.index }}" {% if (s.month or 1) == loop.index %}selected{% endif %}>{{ m }}</option>{% endfor %}</select>
+      </label>
+      <label>وسیله سفر
+        <select name="transport">{% for k, v in transports.items() %}<option value="{{ k }}" {% if s.transport == k %}selected{% endif %}>{{ v[0] }}</option>{% endfor %}</select>
+      </label>
+      <label>سرعت سفر
+        <select name="pace">{% for k, v in pace_labels.items() %}<option value="{{ k }}" {% if (s.pace or 'normal') == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select>
+      </label>
+    </div>
+    <fieldset><legend>هدف سفر (چند مورد را می‌توانید انتخاب کنید)</legend>
+      <div class="checks">
+        {% for k, v in goals.items() %}<label class="check"><input type="checkbox" name="goals" value="{{ k }}" {% if s.goals and k in s.goals %}checked{% endif %}> {{ v }}</label>{% endfor %}
+      </div>
+    </fieldset>
+    <button class="btn primary" type="submit">پیشنهاد بده</button>
+  </form>
+
+  {% if results %}
+  <h2 class="sec" id="results">شهرهای پیشنهادی برای شما</h2>
+  {% for r in results %}
+  {% set c = r.city %}
+  <article class="card result {% if loop.first %}best{% endif %}">
+    <div class="rtop">
+      <div>
+        {% if loop.first %}<span class="badge">بهترین انتخاب</span>{% endif %}
+        <h3><a href="{{ url_for('city', slug=c.slug) }}">{{ c.name }}</a></h3>
+        <p class="muted">{{ c.tagline }}</p>
+      </div>
+      <div class="score"><b>{{ r.score|fa }}٪</b><small>تطابق</small></div>
+    </div>
+    <ul class="plain">{% for x in r.reasons %}<li>{{ x }}</li>{% endfor %}</ul>
+    <div class="costs">
+      {% for t, L in levels.items() %}
+      <div class="cost {{ L.css }} {% if t == r.tier %}sel{% endif %}">
+        <span>{{ L.name }}</span><b>{{ r.costs[t].total|money }}</b>
+        <small>اقامت و غذا: {{ r.costs[t].daily|money }} · رفت‌وآمد: {{ r.costs[t].trans|money }}</small>
+      </div>
+      {% endfor %}
+    </div>
+    <details {% if loop.first %}open{% endif %}>
+      <summary>برنامه روزانه پیشنهادی (سطح {{ levels[r.tier].name }})</summary>
+      <div class="days">
+        {% for d in r.plan %}
+        <div class="day">
+          <h5>روز {{ d.day|fa }}</h5>
+          <ul>
+            {% for p in d.places %}<li>📍 {{ p.name }}</li>{% endfor %}
+            {% for m in d.meals %}<li>🍽 {{ m.name }}</li>{% endfor %}
+            {% if not d.places %}<li>روز آزاد: استراحت یا بازدید دوباره از جاهای مورد علاقه</li>{% endif %}
+          </ul>
+        </div>
+        {% endfor %}
+      </div>
+      <p class="muted">بهترین ساعت حرکت: {{ c.best_departure }}</p>
+    </details>
+  </article>
+  {% endfor %}
+  {% endif %}
+</section>
+{% endblock %}

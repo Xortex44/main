@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}هم‌سفر من{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap bar">
+    <a class="brand" href="{{ url_for('index') }}">هم‌سفر من</a>
+    <nav>
+      <a href="{{ url_for('index') }}#cities">شهرها</a>
+      <a href="{{ url_for('planner') }}">پرسش‌نامه سفر</a>
+      <a href="{{ url_for('articles_page') }}">مقالات</a>
+      <a href="{{ url_for('about') }}">درباره ما</a>
+    </nav>
+  </div>
+</header>
+
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% if msgs %}<div class="wrap">{% for cat, m in msgs %}<div class="flash {{ cat }}">{{ m }}</div>{% endfor %}</div>{% endif %}
+{% endwith %}
+
+<main>{% block content %}{% endblock %}</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <strong>هم‌سفر من</strong> — سفر را زندگی کن، نه فقط مقصد را!
+    <p class="muted">قیمت‌ها و فاصله‌ها حدودی و نمونه‌اند و پیش از سفر باید دوباره بررسی شوند.</p>
+  </div>
+</footer>
+
+<button id="as-fab" type="button" aria-label="دستیار هوشمند">💬 دستیار سفر</button>
+<section id="as-panel" hidden data-city="{{ assistant_city or '' }}" aria-label="دستیار هوشمند">
+  <div class="as-head"><span>دستیار هوشمند هم‌سفر</span><button id="as-close" type="button" aria-label="بستن">×</button></div>
+  {% if not assistant_city %}
+  <select id="as-city" aria-label="انتخاب شهر">
+    <option value="">همه شهرها (سؤال‌های عمومی)</option>
+    {% for c in cities %}<option value="{{ c.slug }}">{{ c.name }}</option>{% endfor %}
+  </select>
+  {% endif %}
+  <div id="as-log"><div class="msg bot">سلام! یکی از سؤال‌های زیر را انتخاب کنید تا جواب را همین‌جا ببینید.</div></div>
+  <div id="as-chips"></div>
+</section>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

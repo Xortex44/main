@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}{{ c.name }} | هم‌سفر من{% endblock %}
+{% block content %}
+<section class="city-hero"
+  style="background-image: linear-gradient(to top, rgba(10,20,30,.8), rgba(10,20,30,.2)), url('{{ city_image(c.slug) }}')">
+  <div class="wrap">
+    <h1>{{ c.name }}</h1>
+    <p>{{ c.tagline }}</p>
+    {% if stats %}<p class="rate">{{ stats[0]|stars }} <span>{{ stats[0]|fa }} از ۵ ({{ stats[1]|fa }} نظر)</span></p>{% endif %}
+  </div>
+</section>
+
+<section class="wrap">
+  <p class="lead">{{ c.intro }}</p>
+  <div class="facts">
+    <div class="fact"><span>فاصله از تهران</span><b>{{ c.km|fa }} کیلومتر</b></div>
+    <div class="fact"><span>زمان رسیدن</span><b>{{ c.hours }}</b></div>
+    <div class="fact"><span>بهترین فصل</span><b>{{ c.best_season }}</b></div>
+    <div class="fact"><span>مدت پیشنهادی</span><b>{{ c.days|fa }} روز</b></div>
+    <div class="fact wide"><span>بهترین ساعت حرکت</span><b>{{ c.best_departure }}</b></div>
+  </div>
+
+  <h2 class="sec">مسیر تهران تا {{ c.name }}</h2>
+  <div class="card scroll">
+    <ol class="route">
+      <li><b>تهران</b><small>مبدأ — ۰ کیلومتر</small></li>
+      {% for s in c.stops %}
+      <li><b>{{ s[0] }}</b><small>{{ s[1]|fa }} کیلومتر</small><em>{{ s[2] }}</em></li>
+      {% endfor %}
+      <li class="end"><b>{{ c.name }}</b><small>{{ c.km|fa }} کیلومتر</small></li>
+    </ol>
+  </div>
+
+  <h2 class="sec">فاصله جاذبه‌ها</h2>
+  <ul class="plain">{% for x in c.distance_notes %}<li>{{ x }}</li>{% endfor %}</ul>
+
+  <h2 class="sec">گشت‌وگذار بر اساس بودجه</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-target="places" type="button">مکان‌های دیدنی</button>
+    <button class="tab" data-target="food" type="button">رستوران‌ها</button>
+  </div>
+  <div class="filters">
+    <button class="chip active" data-level="0" type="button">همه</button>
+    {% for k, L in levels.items() %}<button class="chip" data-level="{{ k }}" type="button">{{ L.name }}</button>{% endfor %}
+  </div>
+
+  {% for kind, items, field in [('places', c.attractions, 'place'), ('food', c.restaurants, 'meal')] %}
+  <div class="pane" id="pane-{{ kind }}" {% if kind == 'food' %}hidden{% endif %}>
+    {% for k, L in levels.items() %}
+      {% set group = items | selectattr('level', 'equalto', k) | list %}
+      {% if group %}
+      <div class="group" data-level="{{ k }}">
+        <h3 class="gh {{ L.css }}">{{ L.name }} <small>({{ L[field] }})</small></h3>
+        <div class="grid items">
+          {% for it in group %}
+          <article class="item {{ L.css }}">
+            <h4>{{ it.name }}</h4>
+            <p>{{ it.desc }}</p>
+            <div class="meta">
+              <span class="price">{{ it.cost|money }}</span>
+            </div>
+          </article>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+  {% endfor %}
+  <p class="muted">قیمت‌ها برای یک نفر و حدودی‌اند.</p>
+
+  <h2 class="sec">غذاهای محلی و نکات سفر</h2>
+  <div class="two">
+    <div class="card"><h4>حتماً امتحان کنید</h4><p>{{ c.local_food | join('، ') }}</p></div>
+    <div class="card"><h4>سفر با بچه</h4><p>{{ c.kids }}</p></div>
+    <div class="card"><h4>نکته مهم</h4><p>{{ c.tips }}</p></div>
+  </div>
+
+  <h2 class="sec" id="reviews">نظر مسافران</h2>
+  <div class="two">
+    <form class="card form" method="post" action="{{ url_for('add_review', slug=c.slug) }}" enctype="multipart/form-data">
+      <h4>تجربه خودتان را بنویسید</h4>
+      <label>نام شما <input name="name" maxlength="40" required></label>
+      <label>درباره کدام مکان؟
+        <select name="target">
+          <option value="">کل شهر</option>
+          {% for t in targets %}<option>{{ t }}</option>{% endfor %}
+        </select>
+      </label>
+      <fieldset class="stars-in"><legend>امتیاز</legend>
+        {% for i in [5,4,3,2,1] %}<input type="radio" id="s{{ i }}" name="rating" value="{{ i }}" {% if i == 5 %}required{% endif %}><label for="s{{ i }}" title="{{ i|fa }} ستاره">★</label>{% endfor %}
+      </fieldset>
+      <label>متن نظر <textarea name="text" rows="4" maxlength="1000" required></textarea></label>
+      <label>عکس سفر (اختیاری، حداکثر ۴ مگابایت) <input type="file" name="photo" accept="image/png,image/jpeg,image/webp"></label>
+      <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <button class="btn primary" type="submit">ثبت نظر</button>
+    </form>
+    <div class="reviews">
+      {% for r in reviews %}
+      <article class="card review">
+        <div class="rh"><b>{{ r['name'] }}</b><span class="stars">{{ r['rating']|stars }}</span></div>
+        <p>{{ r['text'] }}</p>
+        {% if r['photo'] %}<img class="rphoto" loading="lazy" src="{{ url_for('uploads', name=r['photo']) }}" alt="عکس سفر {{ r['name'] }}">{% endif %}
+        <small class="muted">{{ r['created']|fdate }}</small>
+      </article>
+      {% else %}
+      <div class="card empty">هنوز نظری ثبت نشده است. اولین نفر باشید!</div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

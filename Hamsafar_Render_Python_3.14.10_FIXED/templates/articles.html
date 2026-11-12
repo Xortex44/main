@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}مقالات | هم‌سفر من{% endblock %}
+{% block content %}
+<section class="wrap">
+  <h1 class="page">مقالات</h1>
+  <p class="lead">در حالت عادی، پاسخ به سؤال‌های سفر نیازمند جست‌وجو در منابع مختلف است. اما هم‌سفر من تلاش می‌کند این اطلاعات را در یک محیط واحد و قابل دسترس ارائه دهد تا کاربران به‌جای صرف زمان زیاد برای جست‌وجو، زمان بیشتری را به لذت بردن از سفر اختصاص دهند.</p>
+  <div class="grid arts">
+    {% for a in articles %}
+    <a class="card art" href="{{ url_for('article', slug=a.slug) }}">
+      <h3>{{ a.title }}</h3>
+      <p>{{ a.summary }}</p>
+      <span class="more">خواندن مقاله ←</span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

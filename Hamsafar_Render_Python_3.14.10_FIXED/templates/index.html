@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}هم‌سفر من | سفر را زندگی کن، نه فقط مقصد را!{% endblock %}
+{% block content %}
+<section class="hero hero-video-bg">
+  <video class="hero-video" autoplay muted loop playsinline webkit-playsinline preload="auto" disablepictureinpicture aria-hidden="true">
+    <source src="{{ url_for('static', filename='videos/background.mp4') }}" type="video/mp4">
+  </video>
+  <div class="hero-video-overlay" aria-hidden="true"></div>
+  <div class="wrap hero-content">
+    <h1>سفر را زندگی کن، نه فقط مقصد را!</h1>
+    <p>شهرها، جاذبه‌ها، رستوران‌ها و بودجه سفر؛ همه‌چیز در یک جا، متناسب با زمان و بودجه شما.</p>
+    <div class="cta">
+      <a class="btn primary" href="{{ url_for('planner') }}">شروع پرسش‌نامه سفر</a>
+      <a class="btn" href="#cities">دیدن شهرها</a>
+    </div>
+  </div>
+</section>
+
+<section class="wrap" id="cities">
+  <h2 class="sec">شش شهر برای شروع سفر</h2>
+  <div class="grid cities">
+    {% for c in cities %}
+    <a class="city-card" href="{{ url_for('city', slug=c.slug) }}"
+       style="background-image: linear-gradient(to top, rgba(10,20,30,.78), rgba(10,20,30,.05) 60%), url('{{ city_image(c.slug) }}')">
+      <div class="cc-body">
+        <h3>{{ c.name }}</h3>
+        <p>{{ c.tagline }}</p>
+        <div class="meta">
+          <span>📍 {{ c.km|fa }} کیلومتر از تهران</span>
+          <span>🕒 {{ c.hours }}</span>
+          {% if stats.get(c.slug) %}<span>⭐ {{ stats[c.slug][0]|fa }} ({{ stats[c.slug][1]|fa }} نظر)</span>{% endif %}
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="wrap">
+  <h2 class="sec">نقشه شهرهای هم‌سفر من</h2>
+  <div class="card mapbox">
+    <div id="travel-map" class="travel-map" role="application" aria-label="نقشه تعاملی شهرهای ایران"></div>
+    <p class="muted map-note">برای دیدن موقعیت هر شهر روی نشانگر آن بزنید. می‌توانید نقشه را جابه‌جا کنید یا بزرگ‌نمایی کنید. برای بارگذاری نقشه، اتصال اینترنت لازم است.</p>
+  </div>
+</section>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const mapElement = document.getElementById('travel-map');
+    if (!mapElement || typeof L === 'undefined') return;
+
+    const cities = [
+      { slug: 'tehran', name: 'تهران', lat: 35.6892, lon: 51.3890, origin: true },
+      {% for c in cities %}
+      { slug: {{ c.slug|tojson }}, name: {{ c.name|tojson }}, lat: {{ coords[c.slug][0] }}, lon: {{ coords[c.slug][1] }}, km: {{ c.km }} },
+      {% endfor %}
+    ];
+
+    const map = L.map('travel-map', { scrollWheelZoom: false }).setView([32.4, 53.7], 5);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
+    }).addTo(map);
+
+    const bounds = [];
+    cities.forEach(function (city) {
+      const point = [city.lat, city.lon];
+      bounds.push(point);
+      const marker = L.marker(point).addTo(map);
+      if (city.origin) {
+        marker.bindPopup('<strong>تهران</strong><br>مبدأ مسیرها');
+      } else {
+        const link = '/city/' + encodeURIComponent(city.slug);
+        marker.bindPopup('<strong>' + city.name + '</strong><br>' + city.km.toLocaleString('fa-IR') + ' کیلومتر از تهران<br><a href="' + link + '">مشاهده راهنمای شهر</a>');
+      }
+    });
+    if (bounds.length) map.fitBounds(bounds, { padding: [28, 28] });
+    setTimeout(function () { map.invalidateSize(); }, 100);
+  });
+</script>
+
+<section class="wrap">
+  <h2 class="sec">فاصله جاده‌ای بین شهرها (کیلومتر، حدودی)</h2>
+  <div class="card scroll">
+    <table class="tbl">
+      <thead><tr><th></th>{% for c in cities %}<th>{{ c.name }}</th>{% endfor %}</tr></thead>
+      <tbody>
+        {% for a in cities %}
+        <tr><th>{{ a.name }}</th>
+          {% for b in cities %}<td>{% if a.slug == b.slug %}—{% else %}{{ matrix(a.slug, b.slug)|fa }}{% endif %}</td>{% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="card promo">
+    <h3>نمی‌دانید کجا بروید؟</h3>
+    <p>چند سؤال کوتاه جواب بدهید: چند نفرید، بچه همراه دارید، بودجه چقدر است و هدف سفر چیست. ما شهر مناسب و برنامه روزانه را پیشنهاد می‌دهیم.</p>
+    <a class="btn primary" href="{{ url_for('planner') }}">پر کردن پرسش‌نامه</a>
+  </div>
+</section>
+{% endblock %}

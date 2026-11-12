@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}{{ a.title }} | هم‌سفر من{% endblock %}
+{% block content %}
+<section class="wrap prose">
+  <p><a href="{{ url_for('articles_page') }}">← همه مقالات</a></p>
+  <h1 class="page">{{ a.title }}</h1>
+
+  {% if slug == 'local-food' %}
+  <p>برای پیدا کردن رستوران محلی خوب، فقط به شهرت و تبلیغ اکتفا نکنید. این معیارها کمک می‌کنند:</p>
+  <ul>
+    <li><b>تخصص در یک غذا:</b> جایی که یک یا دو غذا را همیشه خوب می‌پزد معمولاً از منوی طولانی بهتر است.</li>
+    <li><b>مشتریان بومی:</b> اگر ساعت ناهار بیشتر مشتری‌ها اهالی شهرند، یعنی طعم و قیمت قابل‌قبول است.</li>
+    <li><b>قیمت منصفانه:</b> قیمت را با سطح‌های «اقتصادی، متوسط و لوکس» در صفحه هر شهر مقایسه کنید.</li>
+    <li><b>بهداشت و ظاهر مکان:</b> تمیزی و رفت‌وآمد مشتری، مهم‌ترین نشانه‌هاست.</li>
+    <li><b>نظر مسافران:</b> نظرهای ثبت‌شده در هر شهر را بخوانید.</li>
+  </ul>
+  <h2>غذای شاخص هر شهر</h2>
+  <div class="grid two">
+    {% for c in cities %}
+    <div class="card">
+      <h4><a href="{{ url_for('city', slug=c.slug) }}#pane-food">{{ c.name }}</a></h4>
+      <p>{{ c.local_food | join('، ') }}</p>
+      <small class="muted">پیشنهاد: {{ c.restaurants[0].name }}</small>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% elif slug == 'budget' %}
+  <p>بودجه سفر را با یک فرمول ساده می‌توان برآورد کرد:</p>
+  <p class="formula">بودجه = (هزینه روزانه × تعداد نفرات × تعداد روز) + هزینه رفت‌وآمد + ۱۰ تا ۲۰ درصد هزینه پیش‌بینی‌نشده</p>
+  <p>کودکان زیر ۱۲ سال را در محاسبه‌های «هم‌سفر من» نیم‌نفر در نظر می‌گیریم.</p>
+  <h2>هزینه روزانه هر نفر (حدودی)</h2>
+  <table class="tbl">
+    <tr><th>سطح</th><th>هزینه هر نفر در روز</th></tr>
+    {% for k, L in levels.items() %}<tr><td>{{ L.name }}</td><td>{{ (DAILY[k])|money }}</td></tr>{% endfor %}
+  </table>
+  <h2>هزینه رفت‌وآمد (هر نفر، هر کیلومتر، یک‌طرفه)</h2>
+  <table class="tbl">
+    {% for k, v in transports.items() %}<tr><td>{{ v[0] }}</td><td>{{ (v[1]*1000)|round|int|fa }} تومان</td></tr>{% endfor %}
+  </table>
+  <h2>مثال: دو نفر، ۴ روز در اصفهان، با خودرو شخصی</h2>
+  <table class="tbl">
+    <tr><th>سطح</th><th>اقامت و غذا</th><th>رفت‌وآمد</th><th>جمع</th></tr>
+    {% for e in example %}<tr><td>{{ levels[e.tier].name }}</td><td>{{ e.daily|money }}</td><td>{{ e.trans|money }}</td><td><b>{{ e.total|money }}</b></td></tr>{% endfor %}
+  </table>
+  <p class="muted">این اعداد برای مثال‌اند. برای برآورد شخصی‌سازی‌شده از <a href="{{ url_for('planner') }}">پرسش‌نامه سفر</a> استفاده کنید.</p>
+
+  {% elif slug == 'distances' %}
+  <p>فاصله‌ها تعیین می‌کنند چه تعداد جاذبه را می‌توانید در یک روز ببینید. قاعده کلی: اگر فاصله کمتر از ۱ کیلومتر باشد پیاده بروید؛ تا ۵ کیلومتر با تاکسی اینترنتی؛ و جاذبه‌های حومه (۵۰ کیلومتر و بیشتر) را یک روز جدا حساب کنید.</p>
+  <h2>فاصله شهرها از هم (کیلومتر، حدودی)</h2>
+  <div class="scroll">
+  <table class="tbl">
+    <thead><tr><th></th>{% for c in cities %}<th>{{ c.name }}</th>{% endfor %}</tr></thead>
+    {% for a2 in cities %}<tr><th>{{ a2.name }}</th>{% for b in cities %}<td>{% if a2.slug == b.slug %}—{% else %}{{ matrix(a2.slug, b.slug)|fa }}{% endif %}</td>{% endfor %}</tr>{% endfor %}
+  </table>
+  </div>
+  <h2>فاصله جاذبه‌ها در هر شهر</h2>
+  {% for c in cities %}
+  <h3><a href="{{ url_for('city', slug=c.slug) }}">{{ c.name }}</a> — {{ c.km|fa }} کیلومتر از تهران</h3>
+  <ul>{% for x in c.distance_notes %}<li>{{ x }}</li>{% endfor %}</ul>
+  {% endfor %}
+
+  {% elif slug == 'experiences' %}
+  <p>این بخش از نظرهایی ساخته می‌شود که خود مسافران در صفحه هر شهر ثبت می‌کنند.</p>
+  <h2>میانگین امتیاز شهرها</h2>
+  <table class="tbl">
+    <tr><th>شهر</th><th>میانگین</th><th>تعداد نظر</th></tr>
+    {% for c in cities %}
+    <tr><td><a href="{{ url_for('city', slug=c.slug) }}#reviews">{{ c.name }}</a></td>
+      <td>{% if stats.get(c.slug) %}{{ stats[c.slug][0]|stars }} {{ stats[c.slug][0]|fa }}{% else %}—{% endif %}</td>
+      <td>{{ (stats.get(c.slug) or (0, 0))[1]|fa }}</td></tr>
+    {% endfor %}
+  </table>
+  <h2>آخرین نظرها</h2>
+  {% for r in latest %}
+  <article class="card review">
+    <div class="rh"><b>{{ r['name'] }}</b><span class="stars">{{ r['rating']|stars }}</span></div>
+    <p>{{ r['text'] }}</p>
+  </article>
+  {% else %}
+  <div class="card empty">هنوز نظری ثبت نشده است. به صفحه یکی از شهرها بروید و اولین تجربه را بنویسید.</div>
+  {% endfor %}
+  {% endif %}
+</section>
+{% endblock %}
